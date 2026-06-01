@@ -1,3 +1,5 @@
+import os
+
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -12,6 +14,8 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 import mlflow
 import mlflow.sklearn  # or mlflow.xgboost if needed
 import joblib
+
+from src.config import MODEL_DIR
 
 def split_data(X, y):
     return train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
@@ -45,53 +49,12 @@ def train_all_models(X_train, X_test, y_train, y_test):
     best_model = None
     best_score = 0.0
     results = {}
+    os.makedirs(MODEL_DIR, exist_ok=True)
 
-    for name, model in models.items():
-        print(f"\nTraining {name}...")
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
+    # ======================================
+    # implemente o treinamento usando o mlflow aqui
+    # ======================================
 
-        # Metrics
-        acc = accuracy_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred)
-        prec = precision_score(y_test, y_pred)
-        rec = recall_score(y_test, y_pred)
-        if acc > best_score:
-            best_score = acc
-            best_model = model
-            best_model_name = name
-
-
-        # MLflow logging
-        with mlflow.start_run(nested=True, run_name=name):
-            mlflow.log_param("model_name", name)
-            mlflow.log_metric("accuracy", acc)
-            mlflow.log_metric("f1_score", f1)
-            mlflow.log_metric("precision", prec)
-            mlflow.log_metric("recall", rec)
-
-            # Log model artifact
-            mlflow.sklearn.log_model(model, f"{name}_model")
-
-        # Save results
-        results[name] = {
-            "model": model,
-            "accuracy": acc,
-            "f1_score": f1,
-            "precision": prec,
-            "recall": rec
-        }
-
-
-    joblib.dump(best_model, f"models/best_model.pkl")
-    print(f"Best model: {best_model_name} with accuracy: {best_score:.4f}")
-    
-    # Save the best model
-    mlflow.sklearn.log_model(best_model, "best_model")
-    # Save the scaler
-    mlflow.sklearn.log_model(X_train, "scaler")
-    # Save the feature columns
-    mlflow.log_artifact("models/columns.pkl", artifact_path="feature_columns")
     return results
 
 

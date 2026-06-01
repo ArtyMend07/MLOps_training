@@ -3,6 +3,8 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import joblib
 
+from src.config import MODEL_DIR
+
 def load_data(path):
     return pd.read_csv(path)
 
@@ -37,12 +39,9 @@ def preprocess_data(df):
         df[['tenure', 'MonthlyCharges', 'TotalCharges']]
     )
 
-    scaler = StandardScaler()
-    scaled_columns = ['tenure', 'MonthlyCharges', 'TotalCharges']
-    df[scaled_columns] = scaler.fit_transform(df[scaled_columns])
-    
-    joblib.dump(scaler, 'models/scaler.pkl')
-    joblib.dump(df.drop('Churn', axis=1).columns.tolist(), 'models/columns.pkl')
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    joblib.dump(scaler, os.path.join(MODEL_DIR, 'scaler.pkl'))
+    joblib.dump(df.drop('Churn', axis=1).columns.tolist(), os.path.join(MODEL_DIR, 'columns.pkl'))
 
     # Separate features and target variable
     X = df.drop('Churn', axis=1)
