@@ -46,15 +46,53 @@ def train_all_models(X_train, X_test, y_train, y_test):
         "MLP": MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=300, random_state=42)
     }
 
+    mlflow.set_experiment("Telco_Customer_Churn")
+
+    from sklearn.model_selection import cross_validate
+    import numpy as np
+
     best_model = None
     best_score = 0.0
     results = {}
-    os.makedirs(MODEL_DIR, exist_ok=True)
 
-    # ======================================
-    # implemente o treinamento usando o mlflow aqui
-    # ======================================
+    for nome_modelo, modelo in models.items():
+        with mlflow.start_run(run_name=nome_modelo):
+            cv_resultados = cross_validate(modelo, X_train, y_train, cv=5, scoring='accuracy', n_jobs=-1)
+            media_acuracia_cv = np.mean(cv_resultados['test_score'])
+            desvio_acuracia_cv = np.std(cv_resultados['test_score'])
+            
+            mlflow.log_metric("mean_test_score", media_acuracia_cv)
+            mlflow.log_metric("std_test_score", desvio_acuracia_cv)
+            
+            params = modelo.get_params()
+            for chave, valor in params.items():
+                mlflow.log_param(chave, str(valor)[:250])
+            
+            modelo.fit(X_train, y_train)
+            
+            y_pred = modelo.predict(X_test)
+            acuracia_teste = accuracy_score(y_test, y_pred)
+            f1_teste = f1_score(y_test, y_pred)
+            
+            mlflow.log_metric("test_accuracy", acuracia_teste)
+            mlflow.log_metric("test_f1", f1_teste)
+            
+            if hasattr(modelo, "predict_proba"):
+                y_proba = modelo.predict_proba(X_test)[:, 1]
+                auc_teste = roc_auc_score(y_test, y_proba)
+                mlflow.log_metric("test_roc_auc", auc_teste)
+            
+            mlflow.sklearn.log_model(modelo, "modelo")
+            
+            results[nome_modelo] = acuracia_teste
+            
+            if f1_teste > best_score:
+                best_score = f1_teste
+                best_model = modelo
 
+    caminho_melhor_modelo = os.path.join(MODEL_DIR, "best_model.pkl")
+    joblib.dump(best_model, caminho_melhor_modelo)
+    
     return results
 
 

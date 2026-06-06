@@ -54,4 +54,4 @@ def log_processed_data(df, output_path='data/processed/churn-processed.csv'):
 
     # Save to CSV
     df.to_csv(output_path, index=False)
-    print(f"✅ Processed data logged to {output_path}")
+    print(f"Dados processados foram salvos com sucesso em: {output_path}")
