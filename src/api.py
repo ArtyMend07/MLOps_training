@@ -53,34 +53,29 @@ def predict_churn(cliente: ClientData):
     try:
         dados_df = pd.DataFrame([cliente.model_dump()])
         
-        # Mapeamento binario
         colunas_binarias = ['Partner', 'Dependents', 'PhoneService', 'PaperlessBilling']
         for col in colunas_binarias:
             dados_df[col] = dados_df[col].map({'Yes': 1, 'No': 0})
             
         dados_df['gender'] = dados_df['gender'].map({'Male': 1, 'Female': 0})
         
-        # Mapeamento dummy (One-Hot Encoding)
         dados_df = pd.get_dummies(dados_df, columns=[
             'MultipleLines', 'InternetService', 'OnlineSecurity', 'OnlineBackup',
             'DeviceProtection', 'TechSupport', 'StreamingTV', 'StreamingMovies',
             'Contract', 'PaymentMethod'
         ])
         
-        # Alinhamento das colunas com o treinamento (adiciona as que faltam com 0, remove extras)
         colunas_treino = modelo_preditivo["colunas_treino"]
         for col in colunas_treino:
             if col not in dados_df.columns:
                 dados_df[col] = 0
         dados_df = dados_df[colunas_treino]
         
-        # Escalonamento
         scaler = modelo_preditivo["scaler"]
         dados_df[['tenure', 'MonthlyCharges', 'TotalCharges']] = scaler.transform(
             dados_df[['tenure', 'MonthlyCharges', 'TotalCharges']]
         )
         
-        # Inferencia
         modelo = modelo_preditivo["modelo"]
         predicao = modelo.predict(dados_df)[0]
         probabilidade = modelo.predict_proba(dados_df)[0][1] if hasattr(modelo, "predict_proba") else None

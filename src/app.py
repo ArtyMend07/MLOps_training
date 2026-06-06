@@ -1,9 +1,10 @@
 import streamlit as st
 import requests
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-API_URL = "http://localhost:8000/predict"
+API_URL = os.getenv("API_URL", "http://localhost:8000/predict")
 
 st.set_page_config(page_title="Telco Churn Prediction", layout="wide")
 
